@@ -1,6 +1,9 @@
 ﻿#!/usr/bin/env python
 #game functions for united guards
 import time, random, datetime, cPickle, speech
+from pydispatch import dispatcher
+from keyboardmanager import kbmgr
+
 _ = speech.getTransFunc()
 s = speech.s
 from ug_data import *
@@ -21,12 +24,12 @@ paused = False
 pressed = False
 left = None #volume for incoming plane
 right = None #the same as above
-ev_game_ended = pygame.event.Event(pygame.USEREVENT, {"code": 3})
-ev_game_active = pygame.event.Event(pygame.USEREVENT, {'code': 1})
+ev_game_ended = "game_ended"
+ev_game_active = "game_active"
 
 
 def position():
-	"""sets random positionn of falling sound."""
+	"""sets random position of falling sound."""
 	global cutplane, target_falling, previous, orig_delay, delay, left, right, rand
 	target_falling = True
 	previous = time.time()
@@ -108,7 +111,7 @@ def startgame(clives, cdelay):
 	orig_delay = delay = cdelay
 	score = 0
 	bestreaction = cdelay
-	pygame.event.post(ev_game_active)
+	dispatcher.send(signal=ev_game_active, sender=None)
 	position()
 
 
@@ -124,7 +127,7 @@ def gamechecker():
 		cPickle.dump(scoreboard, scorefile)
 		scorefile.close()
 		score = None
-		pygame.event.post(ev_game_ended)
+		dispatcher.send(signal=ev_game_ended, sender=None)
 		return
 	if (time.time() >= previous + delay - aim.get_length()) and target_falling == True:
 		mgchan.play (aim)
@@ -141,7 +144,13 @@ def gamechecker():
 
 def pausegame():
 	global remaining, previous, delay
-	ev_game_paused = pygame.event.Event(pygame.USEREVENT, {"code": 2})
+	ev_game_paused = "game_paused"
 	pygame.mixer.pause()
 	remaining = time.time() - (previous + delay)
-	pygame.event.post(ev_game_paused)
+	dispatcher.send(signal=ev_game_paused, sender=None)
+
+def loop():
+	"""A remnant of the if littered loop of the past which just sleeps and calls game check routine."""
+	if kbmgr._current_keymap == "game": gamechecker()
+
+

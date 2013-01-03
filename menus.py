@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 #menus are defined here
-import game, pygame, menu, sys, time, speech, cPickle
+import game, pygame, menu, sys, time, speech, cPickle, globvars
+from pydispatch import dispatcher
 from ug_data import *
+from keyboardmanager import kbmgr
 s = speech.s
 _ = speech.getTransFunc()
 
@@ -12,10 +14,9 @@ _ = speech.getTransFunc()
 
 
 def resumegame():
-	ev_game_active = pygame.event.Event(pygame.USEREVENT, {'code': 1})
 	game.previous = time.time() + game.remaining
 	pygame.mixer.unpause()
-	pygame.event.post(ev_game_active)
+	dispatcher.send(signal="game_active", sender=None)
 
 
 def abortgame():
@@ -26,8 +27,10 @@ def abortgame():
 
 
 def quit ():
+	globvars.checking = False
 	s.say (_("Exiting now."), 1)
 	s.quit ()
+	kbmgr.stop()
 	pygame.quit ()
 	sys.exit ()
 
